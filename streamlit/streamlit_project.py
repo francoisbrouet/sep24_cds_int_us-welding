@@ -30,8 +30,8 @@ if page == pages[0]:
 #    if st.checkbox("Show NA") :
 #        st.dataframe(df_params.isna().sum())
 
-#if page == pages[1]:
-#    st.write('### Data visualization')
+if page == pages[1]:
+    st.write('### Data visualization')
 #    fig = plt.figure()
 #    sns.countplot(x='Survived', data=df)
 #    st.pyplot(fig)
@@ -40,7 +40,23 @@ if page == pages[0]:
 if page == pages[2] : 
     st.write('### Modelling')
     
-    
+# Long frequencies:
+
+# (selectbox)
+# LGBM base model:                                  y_true y_pred       residuals
+# LGBM base + tuned model                           y_true  y_pred      residuals
+# LGBM base + tuned model + filtered model           y_true  y_pred      residuals
+
+# Long displacements
+
+# (radio)
+# tuned Keras model
+# deformed shapes of the best prediction and best NRDD
+
+
+
+
+
     
 """    
     df = df.drop(['PassengerId', 'Name', 'Ticket', 'Cabin'], axis=1)
