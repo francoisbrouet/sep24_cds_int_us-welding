@@ -27,6 +27,8 @@ if page == pages[0]:
     st.write(df_params.shape)
     st.dataframe(df_params.describe())
 
+
+
 #    if st.checkbox("Show NA") :
 #        st.dataframe(df_params.isna().sum())
 
@@ -38,7 +40,7 @@ if page == pages[1]:
 
 
 if page == pages[2] : 
-    st.write('### Modelling')
+    st.write('### Modelling the longitudinal frequency')
     
 # Long frequencies:
 
@@ -47,15 +49,16 @@ if page == pages[2] :
 # LGBM base + tuned model                           y_true  y_pred      residuals
 # LGBM base + tuned model + filtered model           y_true  y_pred      residuals
 
-# Long displacements
 
-# (radio)
-# tuned Keras model
-# deformed shapes of the best prediction and best NRDD
+# Frequency residuals = f(MAC value)
+
+# Points Best & worst predictions
+
+# (radio) best prediction, worst prediction
+# Frequency, MAC values, displacements, frequencies neighbor modes
 
 
-
-
+# (checkbox) yes/no
 
     
 """    
