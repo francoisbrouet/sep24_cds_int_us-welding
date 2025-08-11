@@ -1,3 +1,3 @@
-model_dumps/4_model_lgbm_tuned_all_frequencies.pkl
-ft_files/03_coll_defs.ft
-ft_files/03_feat_nodes.ft
+model_dumps/
+ft_files/
+
