@@ -9,7 +9,8 @@ from lightgbm import LGBMRegressor
 
 
 # Load dataframes
-base_dir = r'C:\FBr\Weiterbildung\Project\GitHub\sep24_cds_int_us-welding'
+#base_dir = r'C:\FBr\Weiterbildung\Project\GitHub\sep24_cds_int_us-welding'
+base_dir = r'D:\Entwicklungen\share\DataScienceProject\sep24_cds_int_us-welding'
 
 ft_param_path = os.path.join(base_dir, 'ft_files', '03_feat_parameters.ft')
 ft_modes_path = os.path.join(base_dir, 'ft_files', '03_coll_modes.ft')
