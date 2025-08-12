@@ -1,0 +1,20 @@
+{
+    "workbench.colorTheme": "Default High Contrast Light",
+    "remote.SSH.remotePlatform": {
+        "54.78.124.57": "linux",
+        "3.249.69.206": "linux",
+        "3.253.239.248": "linux",
+        "18.201.163.158": "linux"
+    },
+    "workbench.startupEditor": "none",
+    "editor.semanticTokenColorCustomizations": {
+
+    },
+    "editor.tokenColorCustomizations": {
+
+    "comments": "#4faa12"
+    }
+
+
+
+}
