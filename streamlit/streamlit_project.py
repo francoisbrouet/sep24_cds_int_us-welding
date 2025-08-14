@@ -6,11 +6,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pickle
 from lightgbm import LGBMRegressor
+from scipy.interpolate import griddata
+from myfunctions_streamlit import *
 
 
 # Load dataframes
-#base_dir = r'C:\FBr\Weiterbildung\Project\GitHub\sep24_cds_int_us-welding'
-base_dir = r'D:\Entwicklungen\share\DataScienceProject\sep24_cds_int_us-welding'
+base_dir = r'C:\FBr\Weiterbildung\Project\GitHub\sep24_cds_int_us-welding'
+#base_dir = r'D:\Entwicklungen\share\DataScienceProject\sep24_cds_int_us-welding'
 
 ft_param_path = os.path.join(base_dir, 'ft_files', '03_feat_parameters.ft')
 ft_modes_path = os.path.join(base_dir, 'ft_files', '03_coll_modes.ft')
@@ -40,10 +42,12 @@ page = st.sidebar.radio('Go to', pages)
 
 if page == pages[0]:
     
-    st.write('### Exploration and visualization of the data')
+    st.write('# Exploration and visualization of the data')
+    
+    st.write ('## DataFrame exploration')
     
     st.write ('DataFrame of parameters')
-    st.dataframe(df_params.head(100))
+    st.dataframe(df_params.head(100), column_config={'dp_no':st.column_config.NumberColumn(format='%f')})
     st.write('Size:', df_params.shape)
 
     st.write ('DataFrame of modes')
@@ -58,24 +62,52 @@ if page == pages[0]:
     st.dataframe(df_defs.head(495))
     st.write('Size:', df_defs.shape)
 
-# Example of the design point 1001
-# modes
+    st.write ('## Data visualization')
+    
+    st.write ('Distribution of the explanatory variables')
+    fig, ax = plt.subplots(figsize=(24, 12))
+    plt.boxplot(df_params[lst_param_geom], labels=lst_param_geom)
+    plt.xticks(rotation=90)
+    plt.grid(True)
+    st.pyplot(fig)
+
+    # Example of the design point 1001
+    dp = 1001    
+    st.write('## Example of Design Point #' + str(dp))
+
+    st.write ('Geometrical parameters:')
+    st.dataframe(df_params.loc[df_params['dp_no'] == dp])
+
+    id_long = df_params.loc[df_params['dp_no'] == dp, 'mode_no_long'].item()
+    st.write ('Identified longitudinal mode: ' + str(id_long))
+
+    # modes
+    lst_modes = range(id_long-3, id_long+4)
+    st.dataframe(df_modes.loc[(df_modes['dp_no'] == dp) & (df_modes['mode_no'].isin(lst_modes))])
+    
+    display = st.radio('Show displacements of:',
+        ['Mode 76', 'Mode 77', 'Mode 78'],
+        captions=['Mode below', '**Longitudinal mode**', 'Mode above'],
+        index=1)
+
+    if display == 'Mode 76':
+        plot_displacement_streamlit(df_modes, df_nodes, df_defs, dp, 76, False)    
+    if display == 'Mode 77':
+        plot_displacement_streamlit(df_modes, df_nodes, df_defs, dp, 77, True)
+    if display == 'Mode 78':
+        plot_displacement_streamlit(df_modes, df_nodes, df_defs, dp, 78, False)
+
+
+
 # long. mode
 # displacements
 
 
 
-    st.write('### Data visualization')
+
 #    fig = plt.figure()
 #    sns.countplot(x='Survived', data=df)
 #    st.pyplot(fig)
-
-    st.write('Distribution of the geometric variables')
-    fig, ax = plt.subplots(figsize=(16, 8))
-    plt.boxplot(df_params[lst_param_geom], labels=lst_param_geom)
-    plt.xticks(rotation=90)
-    plt.grid(True)
-    st.pyplot(fig)
 
 #    st.write ('Correlation heatmap')
 #    cm = df_params[lst_param].corr()
@@ -86,7 +118,7 @@ if page == pages[0]:
 
 
 if page == pages[1] : 
-    st.write('### Modelling the frequency of the longitudinal mode')
+    st.write('# Modelling the frequency of the longitudinal mode')
     st.write ('LightGBM model:')
     choice = ['base model', 'base model + tuned model', 'base model + tuned model + model with filtered data']
     option = st.selectbox('Choice of the model', choice)    
