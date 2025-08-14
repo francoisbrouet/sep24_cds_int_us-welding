@@ -8,6 +8,11 @@ import pickle
 from lightgbm import LGBMRegressor
 from scipy.interpolate import griddata
 from myfunctions_streamlit import *
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error
+
+
+# Draft-Notebook see 8-draft_streamlit.ipynb
 
 
 # Load dataframes
@@ -18,6 +23,7 @@ ft_param_path = os.path.join(base_dir, 'ft_files', '03_feat_parameters.ft')
 ft_modes_path = os.path.join(base_dir, 'ft_files', '03_coll_modes.ft')
 ft_nodes_path = os.path.join(base_dir, 'ft_files', '03_coll_nodes.ft')
 ft_defs_path = os.path.join(base_dir, 'ft_files', '03_coll_defs.ft')
+dump_dir = os.path.join(base_dir, 'model_dumps')
 
 df_params = pd.read_feather (ft_param_path)
 df_modes = pd.read_feather (ft_modes_path)
@@ -28,43 +34,105 @@ df_defs = pd.read_feather (ft_defs_path)
 lst_param = df_params.columns.tolist()
 lst_param_geom = lst_param[1:24]
 lst_param_sel = [lst_param[0]] + lst_param_geom + lst_param[24:26] + lst_param[29:32] + lst_param[57:61] + lst_param[137:139]
-df_params = df_params[lst_param_sel]
+df_params_1 = df_params[lst_param_sel]
+
+# Make displacement plots
+fig_76 = plot_displacement_streamlit(df_modes, df_nodes, df_defs, 1001, 76, False)
+fig_77 = plot_displacement_streamlit(df_modes, df_nodes, df_defs, 1001, 77, True)
+fig_78 = plot_displacement_streamlit(df_modes, df_nodes, df_defs, 1001, 78, False)
+fig_55 = plot_displacement_streamlit(df_modes, df_nodes, df_defs, 11429, 55, False)
+fig_57 = plot_displacement_streamlit(df_modes, df_nodes, df_defs, 11429, 57, False)
+
+# Load variables
+lst_slot_class = lst_param[541:545]
+lst_expl = lst_param[1:4] + lst_param[5:7] + lst_param[8:24] + lst_param[32:34]
+target = 'freq_long'
+X = df_params[lst_expl + lst_slot_class]
+y = df_params[target]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=55)
+df_params_filt = df_params.loc[df_params['mode_mac_long'] > 0.75]
+X_filt = df_params_filt[lst_expl + lst_slot_class]
+y_filt = df_params_filt[target]
+X_train_filt, X_test_filt, y_train_filt, y_test_filt = train_test_split(X_filt, y_filt, test_size=0.2, random_state=55)
 
 # Load models
-pkl_lgbm_long_freq_path = os.path.join(base_dir, 'model_dumps', '4_model_lgbm_tuned_long_frequencies.pkl')
-lgbm_long_freq = pickle.load(open(pkl_lgbm_long_freq_path, 'rb'))
+pipe_base_lgbm = pickle.load(open(os.path.join(dump_dir, '4_model_lgbm_base_long_frequencies.pkl'), 'rb'))
+pipe_tuned_lgbm = pickle.load(open(os.path.join(dump_dir, '4_model_lgbm_tuned_long_frequencies.pkl'), 'rb'))
+pipe_filt_lgbm = pickle.load(open(os.path.join(dump_dir, '6_model_lgbm_filt_long_frequencies.pkl'), 'rb'))
+score_base_lgbm = pipe_base_lgbm.score(X_test, y_test)
+score_tuned_lgbm = pipe_tuned_lgbm.score(X_test, y_test)
+score_filt_lgbm = pipe_filt_lgbm.score(X_test_filt, y_test_filt)
+y_pred_base_lgbm = pipe_base_lgbm.predict(X_test)
+y_pred_tuned_lgbm = pipe_tuned_lgbm.predict(X_test)
+y_pred_filt_lgbm = pipe_filt_lgbm.predict(X_test_filt)
+residuals_lgbm = y_pred_tuned_lgbm-y_test
+residuals_lgbm_abs = np.abs(residuals_lgbm)
+mae_base_lgbm = mean_absolute_error(y_test, y_pred_base_lgbm)
+mae_tuned_lgbm = mean_absolute_error(y_test, y_pred_tuned_lgbm)
+mae_filt_lgbm = mean_absolute_error(y_test_filt, y_pred_filt_lgbm)
+
+# Make model plots
+y_dict = {}
+y_dict['test'] = y_test
+y_dict['test_filt'] = y_test_filt
+y_dict['pred_base'] = y_pred_base_lgbm
+y_dict['pred_tuned'] = y_pred_tuned_lgbm
+y_dict['pred_filt'] = y_pred_filt_lgbm
+fig_base = plot_predictions_residuals(0, y_dict)
+fig_tuned = plot_predictions_residuals(1, y_dict)
+fig_filt = plot_predictions_residuals(2, y_dict)
+
+# Plot Relationship MAC - Residuals
+idx_test = X_test.index
+mac_long_test = df_params.loc[idx_test, 'mode_mac_long']
+fig_mac_res = plt.figure(figsize=(12, 6))
+ax = fig_mac_res.add_subplot(1, 2, 1)
+ax.scatter(mac_long_test, residuals_lgbm)
+ax.plot([0.75, 0.75], [residuals_lgbm.min(), residuals_lgbm.max()], color='r')
+ax.set_xlabel('MAC value')
+ax.set_ylabel('Frequency residuals [Hz]')
+ax.set_title('Relationship between the \n MAC values and the residuals')
+ax.grid(True)
+ax2 = fig_mac_res.add_subplot(1, 2, 2)
+ax2.set_axis_off()
 
 
+
+# ----------------------------------------------------------
 st.title ('Ultrasonic welding')
+
 st.sidebar.title ('Table of contents')
-pages = ['Exploration and visualization', 'Modelling of the frequencies', 'Modelling of the displacements']
+pages = ['Data Exploration', 'Data Visualization', 'Modelling of the frequencies']
 page = st.sidebar.radio('Go to', pages)
 
 if page == pages[0]:
     
-    st.write('# Exploration and visualization of the data')
+    st.write('## Exploration of the data')
     
-    st.write ('## DataFrame exploration')
+    st.write ('### DataFrame exploration')
     
     st.write ('DataFrame of parameters')
-    st.dataframe(df_params.head(100), column_config={'dp_no':st.column_config.NumberColumn(format='%f')})
-    st.write('Size:', df_params.shape)
+    st.dataframe(df_params_1.head(100), column_config={'dp_no':st.column_config.NumberColumn(format='%f')})
+    st.write('Size:', df_params_1.shape)
 
     st.write ('DataFrame of modes')
-    st.dataframe(df_modes.head(152))
+    st.dataframe(df_modes.head(152), column_config={'dp_no':st.column_config.NumberColumn(format='%f')})
     st.write('Size:', df_modes.shape)
     
     st.write ('DataFrame of nodes')
-    st.dataframe(df_nodes.head(495))
+    st.dataframe(df_nodes.head(495), column_config={'dp_no':st.column_config.NumberColumn(format='%f')})
     st.write('Size:', df_nodes.shape)
     
     st.write ('DataFrame of displacements')
-    st.dataframe(df_defs.head(495))
+    st.dataframe(df_defs.head(495), column_config={'dp_no':st.column_config.NumberColumn(format='%f')})
     st.write('Size:', df_defs.shape)
+
+
+if page == pages[1]:
 
     st.write ('## Data visualization')
     
-    st.write ('Distribution of the explanatory variables')
+    st.write ('### Distribution of the explanatory variables')
     fig, ax = plt.subplots(figsize=(24, 12))
     plt.boxplot(df_params[lst_param_geom], labels=lst_param_geom)
     plt.xticks(rotation=90)
@@ -72,18 +140,16 @@ if page == pages[0]:
     st.pyplot(fig)
 
     # Example of the design point 1001
-    dp = 1001    
-    st.write('## Example of Design Point #' + str(dp))
+    st.write('### Example of Design Point #1001')
 
     st.write ('Geometrical parameters:')
-    st.dataframe(df_params.loc[df_params['dp_no'] == dp])
+    st.dataframe(df_params.loc[df_params['dp_no'] == 1001])
 
-    id_long = df_params.loc[df_params['dp_no'] == dp, 'mode_no_long'].item()
+    id_long = df_params.loc[df_params['dp_no'] == 1001, 'mode_no_long'].item()
     st.write ('Identified longitudinal mode: ' + str(id_long))
 
-    # modes
     lst_modes = range(id_long-3, id_long+4)
-    st.dataframe(df_modes.loc[(df_modes['dp_no'] == dp) & (df_modes['mode_no'].isin(lst_modes))])
+    st.dataframe(df_modes.loc[(df_modes['dp_no'] == 1001) & (df_modes['mode_no'].isin(lst_modes))])
     
     display = st.radio('Show displacements of:',
         ['Mode 76', 'Mode 77', 'Mode 78'],
@@ -91,123 +157,70 @@ if page == pages[0]:
         index=1)
 
     if display == 'Mode 76':
-        plot_displacement_streamlit(df_modes, df_nodes, df_defs, dp, 76, False)    
+        st.pyplot(fig_76)
     if display == 'Mode 77':
-        plot_displacement_streamlit(df_modes, df_nodes, df_defs, dp, 77, True)
+        st.pyplot(fig_77)
     if display == 'Mode 78':
-        plot_displacement_streamlit(df_modes, df_nodes, df_defs, dp, 78, False)
+        st.pyplot(fig_78)
 
 
+if page == pages[2] : 
+    st.write('## Modelling the frequency of the longitudinal mode')
 
-# long. mode
-# displacements
-
-
-
-
-#    fig = plt.figure()
-#    sns.countplot(x='Survived', data=df)
-#    st.pyplot(fig)
-
-#    st.write ('Correlation heatmap')
-#    cm = df_params[lst_param].corr()
-#    fig, ax = plt.subplots(figsize=(8, 7))
-#    sns.heatmap(cm, annot=False, ax=ax, cmap='coolwarm')
-#    st.pyplot(fig)
-
-
-
-if page == pages[1] : 
-    st.write('# Modelling the frequency of the longitudinal mode')
-    st.write ('LightGBM model:')
-    choice = ['base model', 'base model + tuned model', 'base model + tuned model + model with filtered data']
+    choice = ['Base model', 'Tuned model', 'Model with filtered data']
     option = st.selectbox('Choice of the model', choice)    
+
+    if option == choice[0]:
+        st.write ('Score of the test set:', score_base_lgbm)
+        st.write ('Mean Absolute Error:', mae_base_lgbm, 'Hz')        
+        st.pyplot(fig_base)        
+        
+    if option == choice[1]:
+        st.write ('Score of the test set:', score_tuned_lgbm)  
+        st.write ('Mean Absolute Error:', mae_tuned_lgbm, 'Hz')         
+        st.pyplot(fig_tuned)
     
-# Long frequencies:
+    if option == choice[2]:
+        st.write ('Score of the test set:', score_filt_lgbm)
+        st.write ('Mean Absolute Error:', mae_filt_lgbm, 'Hz') 
+        st.pyplot(fig_filt)
+    
+    if st.checkbox('Show the worst prediction') :
+        # Worst prediction
+        idx_res_max = residuals_lgbm_abs.idxmax()
+        dp_no_res_max = df_params.loc[idx_res_max, 'dp_no']
+        id_long = df_params.loc[idx_res_max, 'mode_no_long']
 
-# (selectbox)
-# LGBM base model:                                  y_true y_pred       residuals
-# LGBM base + tuned model                           y_true  y_pred      residuals
-# LGBM base + tuned model + filtered model           y_true  y_pred      residuals
-
-
-
+        st.write ('Design point with the worst prediction: DP #' + str(dp_no_res_max))
+        st.write ('Max absolute error:', residuals_lgbm_abs.max(), 'Hz')
+        st.write ('Number of the identified longitudinal mode:', id_long)    
+    
+        st.write ('List of modes of DP ' + str(dp_no_res_max))
+        df_11429 = df_modes.loc[(df_modes['dp_no'] == dp_no_res_max) & ((df_modes['mode_no'] >= id_long-4) & (df_modes['mode_no'] < id_long+3)), ['dp_no', 'mode_no', 'freq', 'mode_mac']]
+        st.dataframe(df_11429, column_config={'dp_no':st.column_config.NumberColumn(format='%f')})
+        
+        st.pyplot(fig_55)
+        st.pyplot(fig_57)
+        
+        # display = st.radio('Show displacements of:',
+            # ['Mode 55', 'Mode 57'],
+            # captions=['Mode 55', 'Mode 57'],
+            # index=0)
+        # if display == 'Mode 55':
+            # st.pyplot(fig_55)
+        # if display == 'Mode 57':
+            # st.pyplot(fig_57)
+            
+    if st.checkbox('Relationship MAC values - Frequency residuals'):
+        st.pyplot(fig_mac_res)
+        
 
 # Frequency residuals = f(MAC value)
 
-# Points Best & worst predictions
 
-    display = st.radio('Which prediction do we want to show ?', ('Best prediction', 'Worst prediction'))
-    if display == 'Best prediction':
-        st.write('Best prediction')
-    if display == 'Worst prediction':
-        st.write('Worst prediction')
 
 # (radio) best prediction, worst prediction
 # Frequency, MAC values, displacements, frequencies neighbor modes
 
-if page == pages[2] : 
-    st.write('### Modelling the displacement uniformity of the longitudinal mode')
-    st.write ('Neural network model:')
-
-
-# Examples
-
-# (checkbox) yes/no
-#    if st.checkbox("Show NA") :
-#        st.dataframe(df_params.isna().sum())
-    
-
-# df = df.drop(['PassengerId', 'Name', 'Ticket', 'Cabin'], axis=1)
-# y = df['Survived']
-# X_cat = df[['Pclass', 'Sex',  'Embarked']]
-# X_num = df[['Age', 'Fare', 'SibSp', 'Parch']]
-
-# for col in X_cat.columns:
-    # X_cat[col] = X_cat[col].fillna(X_cat[col].mode()[0])
-# for col in X_num.columns:
-    # X_num[col] = X_num[col].fillna(X_num[col].median())
-# X_cat_scaled = pd.get_dummies(X_cat, columns=X_cat.columns)
-# X = pd.concat([X_cat_scaled, X_num], axis = 1)
-
-# from sklearn.model_selection import train_test_split
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=123)
-
-# from sklearn.preprocessing import StandardScaler
-# scaler = StandardScaler()
-# X_train[X_num.columns] = scaler.fit_transform(X_train[X_num.columns])
-# X_test[X_num.columns] = scaler.transform(X_test[X_num.columns])
-
-# from sklearn.ensemble import RandomForestClassifier
-# from sklearn.svm import SVC
-# from sklearn.linear_model import LogisticRegression
-# from sklearn.metrics import confusion_matrix
-
-# def prediction(classifier):
-    # if classifier == 'Random Forest':
-        # clf = RandomForestClassifier()
-    # elif classifier == 'SVC':
-        # clf = SVC()
-    # elif classifier == 'Logistic Regression':
-        # clf = LogisticRegression()
-    # clf.fit(X_train, y_train)
-    # return clf
-
-# def scores(clf, choice):
-    # if choice == 'Accuracy':
-        # return clf.score(X_test, y_test)
-    # elif choice == 'Confusion matrix':
-        # return confusion_matrix(y_test, clf.predict(X_test))
-    
-# choice = ['Random Forest', 'SVC', 'Logistic Regression']
-# option = st.selectbox('Choice of the model', choice)
-# st.write('The chosen model is :', option)
-
-# clf = prediction(option)
-# display = st.radio('What do you want to show ?', ('Accuracy', 'Confusion matrix'))
-# if display == 'Accuracy':
-    # st.write(scores(clf, display))
-# elif display == 'Confusion matrix':
-    # st.dataframe(scores(clf, display))
 
 

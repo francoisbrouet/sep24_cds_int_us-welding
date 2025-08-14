@@ -76,7 +76,38 @@ def plot_displacement_streamlit(df_modes, df_nodes, df_defs, dp, mode_no, set_zl
     ax2.set_xlabel('X [mm]')
     ax2.set_ylabel('Z [mm]')
     plt.colorbar(cs)
-    #plt.show()
-    st.pyplot(fig)
 
-    return X, Z, Disp
+    return fig
+    
+
+def plot_predictions_residuals(model, y_dict):
+    
+    fig = plt.figure(figsize=(12, 6))
+
+    ax1 = fig.add_subplot(1, 2, 1)
+    ax1.scatter(y_dict['test'], y_dict['pred_base'], label='LightGBM base')
+    if model >= 1:
+        ax1.scatter(y_dict['test'], y_dict['pred_tuned'], label='LightGBM tuned')
+    if model >= 2:
+        ax1.scatter(y_dict['test_filt'], y_dict['pred_filt'], label='LightGBM filtered data')
+    ax1.plot([y_dict['test'].min(), y_dict['test'].max()], [y_dict['test'].min(), y_dict['test'].max()], color='r')
+    ax1.set_xlabel('Frequency (real values) [Hz]')
+    ax1.set_ylabel('Frequency (predictions) [Hz]')
+    ax1.grid(True)
+    ax1.legend()
+
+    ax2 = fig.add_subplot(1, 2, 2)
+    ax2.scatter(y_dict['test'], y_dict['pred_base']-y_dict['test'], label='LightGBM base')
+    if model >= 1:
+        ax2.scatter(y_dict['test'], y_dict['pred_tuned']-y_dict['test'], label='LightGBM tuned')
+    if model >= 2:
+        ax2.scatter(y_dict['test_filt'], y_dict['pred_filt']-y_dict['test_filt'], label='LightGBM filtered data')
+    ax2.plot([y_dict['test'].min(), y_dict['test'].max()], [0, 0], color='r')
+    ax2.set_xlabel('Frequency [Hz]')
+    ax2.set_ylabel('Residuals [Hz]')
+    ax2.grid(True)
+    ax2.legend()
+
+    return fig
+
+
