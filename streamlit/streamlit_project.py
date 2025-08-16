@@ -143,13 +143,13 @@ if page == pages[1]:
     st.write('### Example of Design Point #1001')
 
     st.write ('Geometrical parameters:')
-    st.dataframe(df_params.loc[df_params['dp_no'] == 1001])
+    st.dataframe(df_params.loc[df_params['dp_no'] == 1001], column_config={'dp_no':st.column_config.NumberColumn(format='%f')})
 
     id_long = df_params.loc[df_params['dp_no'] == 1001, 'mode_no_long'].item()
     st.write ('Identified longitudinal mode: ' + str(id_long))
 
     lst_modes = range(id_long-3, id_long+4)
-    st.dataframe(df_modes.loc[(df_modes['dp_no'] == 1001) & (df_modes['mode_no'].isin(lst_modes))])
+    st.dataframe(df_modes.loc[(df_modes['dp_no'] == 1001) & (df_modes['mode_no'].isin(lst_modes))], column_config={'dp_no':st.column_config.NumberColumn(format='%f')})
     
     display = st.radio('Show displacements of:',
         ['Mode 76', 'Mode 77', 'Mode 78'],
@@ -171,17 +171,17 @@ if page == pages[2] :
     option = st.selectbox('Choice of the model', choice)    
 
     if option == choice[0]:
-        st.write ('Score of the test set:', score_base_lgbm)
+        st.write ('Score R² of the test set:', score_base_lgbm)
         st.write ('Mean Absolute Error:', mae_base_lgbm, 'Hz')        
         st.pyplot(fig_base)        
         
     if option == choice[1]:
-        st.write ('Score of the test set:', score_tuned_lgbm)  
+        st.write ('Score R² of the test set:', score_tuned_lgbm)  
         st.write ('Mean Absolute Error:', mae_tuned_lgbm, 'Hz')         
         st.pyplot(fig_tuned)
     
     if option == choice[2]:
-        st.write ('Score of the test set:', score_filt_lgbm)
+        st.write ('Score R² of the test set:', score_filt_lgbm)
         st.write ('Mean Absolute Error:', mae_filt_lgbm, 'Hz') 
         st.pyplot(fig_filt)
     
