@@ -116,15 +116,15 @@ if page == pages[0]:
     st.write('Size:', df_params_1.shape)
 
     st.write ('DataFrame of modes')
-    st.dataframe(df_modes.head(152), column_config={'dp_no':st.column_config.NumberColumn(format='%f')})
+    st.dataframe(df_modes[df_modes['dp_no'] > 1000].head(152), column_config={'dp_no':st.column_config.NumberColumn(format='%f')})
     st.write('Size:', df_modes.shape)
     
     st.write ('DataFrame of nodes')
-    st.dataframe(df_nodes.head(495), column_config={'dp_no':st.column_config.NumberColumn(format='%f')})
+    st.dataframe(df_nodes[df_nodes['dp_no'] > 1000].head(490), column_config={'dp_no':st.column_config.NumberColumn(format='%f')})
     st.write('Size:', df_nodes.shape)
     
     st.write ('DataFrame of displacements')
-    st.dataframe(df_defs.head(495), column_config={'dp_no':st.column_config.NumberColumn(format='%f')})
+    st.dataframe(df_defs[df_defs['dp_no'] > 1000].head(490), column_config={'dp_no':st.column_config.NumberColumn(format='%f')})
     st.write('Size:', df_defs.shape)
 
 
