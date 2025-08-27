@@ -1,5 +1,3 @@
 model_dumps/4_model_lgbm_tuned_all_frequencies.pkl
+model_dumps/4_model_lgbm_tuned_03-ext_all_frequencies.pkl
 ft_files/
-notebooks/4a-model_tuning_03_all_frequencies_slot42.ipynb
-
-
