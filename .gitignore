@@ -3,3 +3,4 @@ model_dumps/4_model_lgbm_tuned_03-ext_all_frequencies.pkl
 model_dumps/5_model_neuralnetw_tuned_03-ext_long_displacements.pkl
 model_dumps/5_model_neuralnetw_tuned_03-ext_transformer.pkl
 ft_files/
+report/~*
